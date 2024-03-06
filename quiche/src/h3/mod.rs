@@ -1097,10 +1097,11 @@ impl Connection {
         let mut d = [42; 10];
         let mut b = octets::OctetsMut::with_slice(&mut d);
 
-        if !self.frames_greased && conn.grease {
-            self.send_grease_frames(conn, stream_id)?;
-            self.frames_greased = true;
-        }
+        // shikv
+        // if !self.frames_greased && conn.grease {
+        //     self.send_grease_frames(conn, stream_id)?;
+        //     self.frames_greased = true;
+        // }
 
         let header_block = self.encode_header_block(headers)?;
 
@@ -1130,6 +1131,11 @@ impl Connection {
 
         // Sending header block separately avoids unnecessary copy.
         conn.stream_send(stream_id, &header_block, fin)?;
+
+
+
+
+
 
         trace!(
             "{} tx frm HEADERS stream={} len={} fin={}",
@@ -1214,8 +1220,16 @@ impl Connection {
             return Err(Error::Done);
         }
 
-        let overhead = octets::varint_len(frame::DATA_FRAME_TYPE_ID) +
+        let grease_frame2 = grease_value();
+       //shikv
+
+        let overhead = octets::varint_len(grease_frame2) +
             octets::varint_len(body.len() as u64);
+
+
+
+        // let overhead = octets::varint_len(frame::DATA_FRAME_TYPE_ID) +
+        //     octets::varint_len(body.len() as u64);
 
         let stream_cap = match conn.stream_capacity(stream_id) {
             Ok(v) => v,
@@ -1248,7 +1262,7 @@ impl Connection {
             return Err(Error::Done);
         }
 
-        b.put_varint(frame::DATA_FRAME_TYPE_ID)?;
+        b.put_varint(grease_frame2)?;
         b.put_varint(body_len as u64)?;
         let off = b.off();
         conn.stream_send(stream_id, &d[..off], false)?;
